@@ -78,4 +78,17 @@ public class ClientHandler implements Runnable {
             e.printStackTrace();
         }
     }
+
+
+    public Socket getSocket() {
+        return this.socket;
+    }
+
+    public BufferedReader getBufferedReader() {
+        return this.bufferedReader;
+    }
+
+    public BufferedWriter getBufferedWriter() {
+        return this.bufferedWriter;
+    }
 }

@@ -5,6 +5,7 @@ import Client.ClientHandler;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Scanner;
 
 public class Server {
     private ServerSocket serverSocket;
@@ -19,7 +20,6 @@ public class Server {
                 Socket socket = serverSocket.accept();
                 System.out.println("A new client has connected!");
                 ClientHandler clientHandler = new ClientHandler(socket);
-
                 Thread thread = new Thread(clientHandler);
                 thread.start();
             }
@@ -34,6 +34,21 @@ public class Server {
                 serverSocket.close();
             }
         } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void stopServer() {
+        try {
+            // Close the server socket to stop accepting new clients
+            closeServer();
+
+            // Disconnect all existing clients
+            for (ClientHandler clientHandler : ClientHandler.clientHandlers) {
+                clientHandler.closeEverything(clientHandler.getSocket(), clientHandler.getBufferedReader(),
+                        clientHandler.getBufferedWriter());
+            }
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }

@@ -9,6 +9,7 @@ public class Client {
     private BufferedWriter bufferedWriter;
     private BufferedReader bufferedReader;
     private String username;
+    private boolean stopThread = false;
 
     public Client(Socket socket, String username) {
         try {
@@ -28,12 +29,18 @@ public class Client {
             bufferedWriter.flush();
 
             Scanner scanner = new Scanner(System.in);
-            while (socket.isConnected()) {
+            while (socket.isConnected() && !stopThread) {
                 String messageToSend = scanner.nextLine();
-                bufferedWriter.write(username + ": " + messageToSend);
-                bufferedWriter.newLine();
-                bufferedWriter.flush();
+                if (messageToSend.equalsIgnoreCase("quit")) {
+                    stopThread = true;
+                    break;
+                } else {
+                    bufferedWriter.write(username + ": " + messageToSend);
+                    bufferedWriter.newLine();
+                    bufferedWriter.flush();
+                }
             }
+            closeEverything(socket, bufferedReader, bufferedWriter);
         } catch (IOException e) {
             closeEverything(socket, bufferedReader, bufferedWriter);
         }
@@ -57,17 +64,11 @@ public class Client {
         }).start();
     }
 
-    public void closeEverything(Socket socket, BufferedReader bufferedReader, BufferedWriter bufferedWriter) {
+    public void closeEverything(Socket socket, BufferedReader bufferedReader, BufferedWriter bu fferedWriter) {
         try {
-            if (bufferedReader != null) {
-                bufferedReader.close();
-            }
-            if (bufferedWriter != null) {
-                bufferedWriter.close();
-            }
-            if (socket != null) {
-                socket.close();
-            }
+            socket.close();
+            bufferedReader.close();
+            bufferedWriter.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
