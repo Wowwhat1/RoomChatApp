@@ -1,8 +1,13 @@
 package Client;
 
+import Server.Server;
+import Transport.TransportMsg;
+import Process.ProcessMsg;
+
 import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Objects;
 
 public class ClientHandler implements Runnable {
     public static ArrayList<ClientHandler> clientHandlers = new ArrayList<>();
@@ -10,15 +15,17 @@ public class ClientHandler implements Runnable {
     private BufferedReader bufferedReader;
     private BufferedWriter bufferedWriter;
     private String clientUserName;
+    private Server server;
 
-    public ClientHandler(Socket socket) {
+    public ClientHandler(Socket socket, Server server) {
         try {
             this.socket = socket;
             this.bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
             this.bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             this.clientUserName = bufferedReader.readLine();
+            this.server = server;
             clientHandlers.add(this);
-            broadcastMessage("Server: " + clientUserName + " has entered the chat room!");
+            broadcastMessage("SERVER: " + clientUserName + " has entered the chat room!");
         } catch (IOException e) {
             closeEverything(socket, bufferedReader, bufferedWriter);
         }
@@ -31,11 +38,12 @@ public class ClientHandler implements Runnable {
         while (socket.isConnected()) {
             try {
                 messageFromClient = bufferedReader.readLine();
-                if (messageFromClient.equalsIgnoreCase("quit")) {
+                if (Objects.equals(messageFromClient, "quit") || messageFromClient == null) {
+                    removeClientHandler();
                     closeEverything(socket, bufferedReader, bufferedWriter);
-                    break;
+                } else {
+                    broadcastMessage(messageFromClient);
                 }
-                broadcastMessage(messageFromClient);
             } catch (IOException e) {
                 closeEverything(socket, bufferedReader, bufferedWriter);
                 break;
@@ -59,11 +67,11 @@ public class ClientHandler implements Runnable {
 
     public void removeClientHandler() {
         clientHandlers.remove(this);
-        broadcastMessage("Server: " + clientUserName + " has left the chat room!");
+        broadcastMessage("SERVER: " + clientUserName + " has left the chat room!");
+        server.broadcastQuitMessage(this.clientUserName, " has left the chat room!");
     }
 
     public void closeEverything(Socket socket, BufferedReader bufferedReader, BufferedWriter bufferedWriter) {
-        removeClientHandler();
         try {
             if (bufferedReader != null) {
                 bufferedReader.close();
@@ -77,18 +85,5 @@ public class ClientHandler implements Runnable {
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-
-    public Socket getSocket() {
-        return this.socket;
-    }
-
-    public BufferedReader getBufferedReader() {
-        return this.bufferedReader;
-    }
-
-    public BufferedWriter getBufferedWriter() {
-        return this.bufferedWriter;
     }
 }

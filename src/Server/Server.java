@@ -9,7 +9,7 @@ import java.util.Scanner;
 
 public class Server {
     private ServerSocket serverSocket;
-
+    
     public Server(ServerSocket serverSocket) {
         this.serverSocket = serverSocket;
     }
@@ -19,7 +19,7 @@ public class Server {
             while (!serverSocket.isClosed()) {
                 Socket socket = serverSocket.accept();
                 System.out.println("A new client has connected!");
-                ClientHandler clientHandler = new ClientHandler(socket);
+                ClientHandler clientHandler = new ClientHandler(socket, this);
                 Thread thread = new Thread(clientHandler);
                 thread.start();
             }
@@ -38,19 +38,8 @@ public class Server {
         }
     }
 
-    public void stopServer() {
-        try {
-            // Close the server socket to stop accepting new clients
-            closeServer();
-
-            // Disconnect all existing clients
-            for (ClientHandler clientHandler : ClientHandler.clientHandlers) {
-                clientHandler.closeEverything(clientHandler.getSocket(), clientHandler.getBufferedReader(),
-                        clientHandler.getBufferedWriter());
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    public void broadcastQuitMessage(String clientUsername, String message) {
+        System.out.println(clientUsername + " has left the chat room!");
     }
 
     public static void main(String[] args) throws IOException {

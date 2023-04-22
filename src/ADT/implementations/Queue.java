@@ -3,69 +3,72 @@ package ADT.implementations;
 import ADT.interfaces.IQueue;
 
 public class Queue<E> implements IQueue<E> {
-    int front = -1;
-    int rear = -1;
-    int max;
-    int size;
-    Object[] q;
+    private Node<E> head;
+    private int size;
+
+    private static class Node<E> {
+        private E element;
+        private Node<E> next;
+
+        public Node(E value) {
+            this.element = value;
+        }
+    }
 
     public Queue() {
-        this.max = 250;
-        this.q = new Object[max];
-        size = 0;
+        this.head = null;
+        this.size = 0;
     }
 
     @Override
     public void enQueue(E element) {
-        if ((rear + 1) % max == front) {
-            throw new IndexOutOfBoundsException("Overflow");
+        Node<E> newNode = new Node<>(element);
+        if (this.head == null) {
+            this.head = newNode;
+        } else {
+            Node<E> current = this.head;
+            while (current.next != null) {
+                current = current.next;
+            }
+            current.next = newNode;
         }
-        if (front == -1 & rear == - 1){
-            front = 0; rear = 0;
-        }
-        else if (rear == max - 1 & front != 0){
-            rear = 0;
-        }
-        else {
-            rear = (rear + 1) % max;
-        }
-        q[rear] = element;
-        size++;
+        this.size++;
     }
 
     @Override
     public E deQueue() {
-        if (front == -1) {
-            throw new IndexOutOfBoundsException("Underflow");
+        ensureNonEmpty();
+        E element = this.head.element;
+        if (this.size == 1) {
+            this.head = null;
+        } else {
+            Node<E> next = this.head.next;
+            this.head.next = null;
+            this.head = next;
         }
-        var value = q[front];
-        if (front == rear){
-            front = -1;
-            rear = -1;
+        this.size--;
+        return element;
+    }
+
+    private void ensureNonEmpty() {
+        if (isEmpty()) {
+            throw new IllegalStateException("Stack is empty");
         }
-        else if (front == max - 1){
-            front = 0;
-        }
-        else {
-            front = front + 1;
-        }
-        size--;
-        return (E) value;
+    }
+
+    @Override
+    public E peek() {
+        ensureNonEmpty();
+        return head.element;
+    }
+
+    @Override
+    public int size() {
+        return 0;
     }
 
     @Override
     public boolean isEmpty() {
-        return front == -1 && rear == -1;
+        return size == 0;
     }
-
-    public void clear() {
-        for (int i = front; i != rear; i = (i+1)%max){
-            q[i] = null;
-        }
-        front = -1;
-        rear = -1;
-        size = 0;
-    }
-
-    public int size() {return size;}
 }

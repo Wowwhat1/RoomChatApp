@@ -3,11 +3,15 @@ package Client;
 import java.io.*;
 import java.net.Socket;
 import java.util.Scanner;
+import Process.ProcessMsg;
+import Transport.TransportMsg;
 
 public class Client {
     private Socket socket;
     private BufferedWriter bufferedWriter;
     private BufferedReader bufferedReader;
+    private ProcessMsg process;
+    private TransportMsg transport;
     private String username;
     private boolean stopThread = false;
 
@@ -17,6 +21,8 @@ public class Client {
             this.bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             this.bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
             this.username = username;
+            process = new ProcessMsg();
+            transport = new TransportMsg();
         } catch (IOException e) {
             closeEverything(socket, bufferedReader, bufferedWriter);
         }
@@ -29,42 +35,52 @@ public class Client {
             bufferedWriter.flush();
 
             Scanner scanner = new Scanner(System.in);
-            while (socket.isConnected() && !stopThread) {
+            while (socket.isConnected()) {
                 String messageToSend = scanner.nextLine();
                 if (messageToSend.equalsIgnoreCase("quit")) {
                     stopThread = true;
                     break;
+                } else if (messageToSend.equalsIgnoreCase("undo")) {
+                    if (!process.isEmpty()) {
+                        String undoneMessage = process.popMessage();
+                        bufferedWriter.write(username + " has undone the message: " + undoneMessage);
+                        bufferedWriter.newLine();
+                        bufferedWriter.flush();
+                    } else {
+                        System.out.println("There are no messages to undo.");
+                    }
                 } else {
-                    bufferedWriter.write(username + ": " + messageToSend);
-                    bufferedWriter.newLine();
-                    bufferedWriter.flush();
+                    transport.addMessage(messageToSend);
+                    if (!transport.isEmpty()) {
+                        bufferedWriter.write(username + ": " + transport.sendMessage());
+                        bufferedWriter.newLine();
+                        bufferedWriter.flush();
+                    }
                 }
             }
             closeEverything(socket, bufferedReader, bufferedWriter);
         } catch (IOException e) {
-            closeEverything(socket, bufferedReader, bufferedWriter);
+            e.printStackTrace();
         }
     }
 
     public void listenToMessage() {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                String messageFromGroupChat;
+        new Thread(() -> {
+            String messageFromGroupChat;
 
-                while (socket.isConnected()) {
-                    try {
-                        messageFromGroupChat = bufferedReader.readLine();
-                        System.out.println(messageFromGroupChat);
-                    } catch (IOException e) {
-                        closeEverything(socket, bufferedReader, bufferedWriter);
-                    }
+            while (socket.isConnected() && !stopThread) {
+                try {
+                    messageFromGroupChat = bufferedReader.readLine();
+                    System.out.println(messageFromGroupChat);
+                    process.pushMessage(messageFromGroupChat);
+                } catch (IOException e) {
+                    closeEverything(socket, bufferedReader, bufferedWriter);
                 }
             }
         }).start();
     }
 
-    public void closeEverything(Socket socket, BufferedReader bufferedReader, BufferedWriter bu fferedWriter) {
+    public void closeEverything(Socket socket, BufferedReader bufferedReader, BufferedWriter bufferedWriter) {
         try {
             socket.close();
             bufferedReader.close();
